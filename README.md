@@ -6,7 +6,7 @@ Usage example
 Home.js
 ```js
 new Namespace({
-    models      : '/models/models.js'
+    models : '/models/models.js'
 }, function () {
     var dog = new this.models.Dog('odie');
     var cat = new this.models.Cat('garfield');

@@ -45,7 +45,7 @@ this.exports(new Class(function (name) {
 var Animal = this.use('Animal');
 
 this.exports(new Class(function () {
-    this.inherits(Animal);
+    this.inherit(Animal);
     
     this.bark = function () {
         this.say('Au Au!');
@@ -58,7 +58,7 @@ this.exports(new Class(function () {
 var Animal = this.use('Animal');
 
 this.exports(new Class(function () {
-    this.inherits(Animal);
+    this.inherit(Animal);
     
     this.meow = function () {
         this.say('Meow!');

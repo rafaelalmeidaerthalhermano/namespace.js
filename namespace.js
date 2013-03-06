@@ -1,19 +1,3 @@
-/**
-* Copyright (C) 2013 Rafael Almeida Erthal Hermano
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful, but
-* WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program. If not, see http://www.gnu.org/licenses/.
-*/
 
 /* @class: Namespace
 *
@@ -25,36 +9,28 @@
 */
 var Namespace = new Class(function (files, callback) {
     var ajax = new Ajax(),
+        requests = 0,
+        returns = 0,
         sources = [],
-        i,
-        count = 0;
+        that = this;
 
-    /* @class: Builder
+    /* @class: Module
     *
     * @author: Rafael Almeida Erthal Hermano
     * @description: Ambiente em que os arquivos são executados
     *
     * @param fn: código do arquivo a ser executado
     */
-    var Builder = new Class(function (fn) {
-        this.data = null;
-        
+    var Module = new Class(function (source) {
         /* @function use
         *
         * @author: Rafael Almeida Erthal Hermano
         * @description: Pega um objeto do namespace
         *
-        * @param module: nome do modulo a ser pego
+        * @param module: modulos a serem usados
+        * @param callback: callback a ser chamado após a requisição do arquivo específico
         */
-        this.use = function (module) {
-            var i;
-            //busca nos módulos baixados o módulo requisitado
-            for (i in sources) {
-                if (sources[i].name === module) {
-                    //Retorna o módulo
-                    return (new Builder(sources[i].source)).data;
-                }
-            }
+        this.use = function (module, callback) {
         };
         
         /* @function exports
@@ -65,14 +41,23 @@ var Namespace = new Class(function (files, callback) {
         * @param obj: valor a ser retornado
         */
         this.exports = function (obj) {
-            this.data = obj;
+            returns++;
+            that[source.name] = obj;
+            if (sources.length === returns) {
+                callback.apply(that);
+            }
         };
-        
-        fn.apply(this);
     });
-
-    for (i in files) {
-        count++;
+    
+    /* @function build
+    *
+    * @author: Rafael Almeida Erthal Hermano
+    * @description: Monta o namespace
+    */
+    var build = function () {
+        for (var i in sources) {
+            sources[i].source(new Module(sources[i]));
+        }
     }
     
     /* @function source
@@ -84,26 +69,22 @@ var Namespace = new Class(function (files, callback) {
     */
     var source = function (name) {
         ajax.get(files[name], function (data) {
-            var i,
-                space = {};
             //Grava o código e o nome do arquivo
             sources.push({
                 name   : name,
-                source : new Function(data)
+                source : new Function("module", data)
             });
-            //Verifica se todos os arquivos ja foram entregues
-            if (sources.length === count) {
-                for (i in sources) {
-                    //Coloca os objetos no resultado
-                    space[sources[i].name] = (new Builder(sources[i].source)).data;
-                }
-                //Responde o namespace
-                callback.apply(space);
+            if (sources.length === requests) {
+                build();
             }
         });
     }
 
-    for (i in files) {
+    for (var i in files) {
+        requests++;
+    }
+
+    for (var i in files) {
         source(i);
     }
 });

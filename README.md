@@ -18,8 +18,6 @@ new Namespace({
 
 /models/models.js
 ```js
-var module = this;
-
 new Namespace({
     Animal : '/models/animal.js',
     Dog    : '/models/dog.js',
@@ -31,7 +29,7 @@ new Namespace({
 
 /models/animal.js
 ```js
-this.exports(new Class(function (name) {
+module.exports(new Class(function (name) {
     this.name = name;
     
     this.say = function (message) {
@@ -42,9 +40,9 @@ this.exports(new Class(function (name) {
 
 /models/dog.js
 ```js
-var Animal = this.use('Animal');
+var Animal = module.use('Animal');
 
-this.exports(new Class(function () {
+module.exports(new Class(function () {
     this.inherit(Animal);
     
     this.bark = function () {
@@ -55,9 +53,9 @@ this.exports(new Class(function () {
 
 /models/cat.js
 ```js
-var Animal = this.use('Animal');
+var Animal = module.use('Animal');
 
-this.exports(new Class(function () {
+module.exports(new Class(function () {
     this.inherit(Animal);
     
     this.meow = function () {

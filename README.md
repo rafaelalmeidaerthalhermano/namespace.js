@@ -1,5 +1,6 @@
 Namespace.js
 ============
+This project uses the [Class.js](http://github.com/rafaelalmeidaerthalhermano/class.js) project and [Ajax.js](http://github.com/rafaelalmeidaerthalhermano/ajax.js) project
 
 Usage example
 

@@ -1,17 +1,33 @@
+/**
+* Copyright (C) 2013 Rafael Almeida Erthal Hermano
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+* General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see http://www.gnu.org/licenses/.
+*/
 
 /* @class: Namespace
 *
 * @author: Rafael Almeida Erthal Hermano
 * @description: Construtor de um namespace
 *
-* @param files: arquivos que vão montar o namespace
+* @param object: arquivos e atributos que vão montar o namespace
 * @param callback: callback a ser chamado após a criação do namespace
 */
 var Namespace = new Class(function (files, callback) {
     var ajax = new Ajax(),
-        requests = 0,
         returns = 0,
-        sources = [],
+        size = 0,
+        waiting = [],
         that = this;
 
     /* @class: Module
@@ -21,16 +37,25 @@ var Namespace = new Class(function (files, callback) {
     *
     * @param fn: código do arquivo a ser executado
     */
-    var Module = new Class(function (source) {
+    var Module = new Class(function (name, source) {
         /* @function use
         *
         * @author: Rafael Almeida Erthal Hermano
         * @description: Pega um objeto do namespace
         *
-        * @param module: modulos a serem usados
-        * @param callback: callback a ser chamado após a requisição do arquivo específico
+        * @param module: modulo que deve ser carregado
         */
-        this.use = function (module, callback) {
+        this.use = function (module) {
+            for (var i in that) {
+        		if (i === module) {
+        			return that[module];
+        		}
+        	}
+        	waiting.push({
+                name : name,
+                source : source
+            });
+        	throw name + ' wainting for module ' + module;
         };
         
         /* @function exports
@@ -42,8 +67,15 @@ var Namespace = new Class(function (files, callback) {
         */
         this.exports = function (obj) {
             returns++;
-            that[source.name] = obj;
-            if (sources.length === returns) {
+            that[name] = obj;
+            for (var i in waiting) {
+                if (waiting[i].name === name) {
+                    delete waiting[i];
+                } else {
+                    waiting[i].source(new Module(waiting[i].name, waiting[i].source));
+                }   
+            }
+            if (size === returns) {
                 callback.apply(that);
             }
         };
@@ -52,39 +84,37 @@ var Namespace = new Class(function (files, callback) {
     /* @function build
     *
     * @author: Rafael Almeida Erthal Hermano
-    * @description: Monta o namespace
-    */
-    var build = function () {
-        for (var i in sources) {
-            sources[i].source(new Module(sources[i]));
-        }
-    }
-    
-    /* @function source
+    * @description: Pega o código de cada arquivo e executa
     *
-    * @author: Rafael Almeida Erthal Hermano
-    * @description: Pega o código de cada arquivo
-    *
-    * @param name: nome do arquivo
+    * @param name: nome do objeto que vai ser montado
     */
-    var source = function (name) {
-        ajax.get(files[name], function (data) {
-            //Grava o código e o nome do arquivo
-            sources.push({
-                name   : name,
-                source : new Function("module", data)
-            });
-            if (sources.length === requests) {
-                build();
+    var build = function (name) {
+        ajax.get(files[name], {
+        	onsuccess : function (data) {
+                var fn = new Function("module", data);
+                try {
+                    fn(new Module(name, fn));
+                } catch(e) {
+                    console.log(e);
+                }
+	        },
+            onerror : function () {
+                returns++;
+                that[name] = files[name];
             }
-        });
+    	});
     }
 
     for (var i in files) {
-        requests++;
+        size++;
     }
 
     for (var i in files) {
-        source(i);
+        if (files[i].constructor === String) {
+            build(i);
+        } else {
+            returns++;
+            that[i] = files[i];
+        }
     }
 });

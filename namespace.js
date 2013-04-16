@@ -35,7 +35,8 @@ var Namespace = new Class(function (files, callback) {
     * @author: Rafael Almeida Erthal Hermano
     * @description: Ambiente em que os arquivos são executados
     *
-    * @param fn: código do arquivo a ser executado
+    * @param name: nome do módulo
+    * @param source: código do arquivo a ser executado
     */
     var Module = new Class(function (name, source) {
         /* @function use
@@ -47,15 +48,15 @@ var Namespace = new Class(function (files, callback) {
         */
         this.use = function (module) {
             for (var i in that) {
-        		if (i === module) {
-        			return that[module];
-        		}
-        	}
-        	waiting.push({
+                if (i === module) {
+                    return that[module];
+                }
+            }
+            waiting.push({
                 name : name,
                 source : source
             });
-        	throw name + ' wainting for module ' + module;
+            throw name + ' wainting for module ' + module;
         };
         
         /* @function exports
@@ -90,19 +91,19 @@ var Namespace = new Class(function (files, callback) {
     */
     var build = function (name) {
         ajax.get(files[name], {
-        	onsuccess : function (data) {
+            onsuccess : function (data) {
                 var fn = new Function("module", data);
                 try {
                     fn(new Module(name, fn));
                 } catch(e) {
                     console.log(e);
                 }
-	        },
+            },
             onerror : function () {
                 returns++;
                 that[name] = files[name];
             }
-    	});
+        });
     }
 
     for (var i in files) {

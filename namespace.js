@@ -14,6 +14,22 @@
 * You should have received a copy of the GNU General Public License
 * along with this program. If not, see http://www.gnu.org/licenses/.
 */
+/**
+* Copyright (C) 2013 Rafael Almeida Erthal Hermano
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful, but
+* WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+* General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with this program. If not, see http://www.gnu.org/licenses/.
+*/
 
 /* @class: Namespace
 *
@@ -70,8 +86,9 @@ var Namespace = new Class(function (files, callback) {
                     ready = false;
                 }
             }
-            if (ready) {
+            if (ready && callback) {
                 callback.apply(that);
+                callback = null;
             }
         };
     });
@@ -84,12 +101,13 @@ var Namespace = new Class(function (files, callback) {
     * @param name: nome do objeto que vai ser montado
     * @param fn: código que monta o objeto
     */
-    var retry = function (name, fn) {
+    var retry = function (name) {
         setTimeout(function () {
             try {
-                fn(new Module(name, fn));
+                waiting[name].source(new Module(name, waiting[name].source));
             } catch(e) {
-                retry(name, fn);
+                console.log(name + ' ' + e);
+                retry(name);
             }
         }, 10);
     }
@@ -104,22 +122,19 @@ var Namespace = new Class(function (files, callback) {
     var build = function (name) {
         ajax.get(files[name], {
             onsuccess : function (data) {
-                var fn = new Function("module", data);
-                waiting[name] = {
-                    source : fn,
-                    resolved : false
-                };
-                retry(name, fn);
+                waiting[name].source = new Function("module", data);
+                retry(name);
             }
         });
     }
 
     for (var i in files) {
-        if (files[i].constructor === String) {
-            build(i);
-        } else {
-            returns++;
-            that[i] = files[i];
-        }
+        waiting[i] = {
+            resolved : false
+        };
+    }
+
+    for (var i in files) {
+        build(i);
     }
 });

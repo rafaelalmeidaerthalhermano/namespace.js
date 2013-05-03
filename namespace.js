@@ -25,9 +25,7 @@
 */
 var Namespace = new Class(function (files, callback) {
     var ajax = new Ajax(),
-        returns = 0,
-        size = 0,
-        waiting = [],
+        waiting = {},
         that = this;
 
     /* @class: Module
@@ -52,13 +50,9 @@ var Namespace = new Class(function (files, callback) {
                     return that[module];
                 }
             }
-            waiting.push({
-                name : name,
-                source : source
-            });
-            throw name + ' wainting for module ' + module;
+            throw name + ' waiting for module ' + module;
         };
-        
+
         /* @function exports
         *
         * @author: Rafael Almeida Erthal Hermano
@@ -67,25 +61,43 @@ var Namespace = new Class(function (files, callback) {
         * @param obj: valor a ser retornado
         */
         this.exports = function (obj) {
-            returns++;
             that[name] = obj;
+            waiting[name].resolved = true;
+
+            var ready = true;
             for (var i in waiting) {
-                if (waiting[i].name === name) {
-                    delete waiting[i];
-                } else {
-                    waiting[i].source(new Module(waiting[i].name, waiting[i].source));
-                }   
+                if (!waiting[i].resolved) {
+                    ready = false;
+                }
             }
-            if (size === returns) {
+            if (ready) {
                 callback.apply(that);
             }
         };
     });
-    
+
+    /* @function retry
+    *
+    * @author: Rafael Almeida Erthal Hermano
+    * @description: Executa o código de cada arquivo
+    *
+    * @param name: nome do objeto que vai ser montado
+    * @param fn: código que monta o objeto
+    */
+    var retry = function (name, fn) {
+        setTimeout(function () {
+            try {
+                fn(new Module(name, fn));
+            } catch(e) {
+                retry(name, fn);
+            }
+        }, 10);
+    }
+
     /* @function build
     *
     * @author: Rafael Almeida Erthal Hermano
-    * @description: Pega o código de cada arquivo e executa
+    * @description: Pega o código de cada arquivo
     *
     * @param name: nome do objeto que vai ser montado
     */
@@ -93,21 +105,13 @@ var Namespace = new Class(function (files, callback) {
         ajax.get(files[name], {
             onsuccess : function (data) {
                 var fn = new Function("module", data);
-                try {
-                    fn(new Module(name, fn));
-                } catch(e) {
-                    console.log(e);
-                }
-            },
-            onerror : function () {
-                returns++;
-                that[name] = files[name];
+                waiting[name] = {
+                    source : fn,
+                    resolved : false
+                };
+                retry(name, fn);
             }
         });
-    }
-
-    for (var i in files) {
-        size++;
     }
 
     for (var i in files) {

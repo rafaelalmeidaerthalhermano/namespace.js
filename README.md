@@ -64,3 +64,7 @@ module.exports(new Class(function () {
     }
 }));
 ```
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/rafaelalmeidaerthalhermano/namespace.js/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
